@@ -133,7 +133,10 @@ def get_registry_data():
         dates = [img['created'] for img in build['images'] if img['created'] != "Unknown"]
         return max(dates) if dates else ""
 
-    builds.sort(key=get_latest_date, reverse=True)
+    for build in builds:
+        build['latest_date'] = get_latest_date(build)
+
+    builds.sort(key=lambda b: b['latest_date'], reverse=True)
 
     return builds
 
