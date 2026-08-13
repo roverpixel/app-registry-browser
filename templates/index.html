@@ -31,11 +31,26 @@
 
     <!-- Sidebar -->
     <div class="w-1/3 max-w-sm bg-white border-r border-gray-200 flex flex-col h-full">
-        <div class="p-4 bg-gray-800 text-white shadow-md z-10">
+        <div class="p-4 bg-gray-800 text-white shadow-md z-10 flex-shrink-0">
             <h1 class="text-xl font-bold">Registry Browser</h1>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-2">
+        <div class="p-3 border-b border-gray-200 bg-white shadow-sm z-10 flex-shrink-0">
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search by tag or SHA..."
+                       class="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                <button id="clearSearch" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden focus:outline-none" aria-label="Clear search">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-2" id="sidebarList">
+            <div id="noResults" class="p-4 text-gray-500 text-center hidden">
+                No matching builds found
+            </div>
             {% if builds %}
                 {% for build in builds %}
                 <div id="sidebar-{{ build.id }}" class="sidebar-item cursor-pointer p-4 mb-2 rounded border-l-4 border-transparent hover:bg-gray-100 transition-colors duration-150" onclick="showBuild('{{ build.id }}')">
@@ -106,6 +121,59 @@
                 showBuild('{{ builds[0].id }}');
             };
         {% endif %}
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('clearSearch');
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+            const noResultsMsg = document.getElementById('noResults');
+
+            if (!searchInput) return;
+
+            function filterBuilds() {
+                const term = searchInput.value.toLowerCase().trim();
+                let hasVisible = false;
+
+                if (term.length > 0) {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                }
+
+                sidebarItems.forEach(item => {
+                    const tagsElem = item.querySelector('.text-blue-600');
+                    const shaElem = item.querySelector('.bg-gray-200');
+
+                    const tagsText = tagsElem ? tagsElem.textContent.toLowerCase() : '';
+                    const shaText = shaElem ? shaElem.textContent.toLowerCase() : '';
+
+                    if (tagsText.includes(term) || shaText.includes(term)) {
+                        item.classList.remove('hidden');
+                        hasVisible = true;
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+
+                // Show/hide no results message
+                if (noResultsMsg) {
+                    // Only show "No results" if we have builds but none matched the search
+                    if (sidebarItems.length > 0 && !hasVisible) {
+                        noResultsMsg.classList.remove('hidden');
+                    } else {
+                        noResultsMsg.classList.add('hidden');
+                    }
+                }
+            }
+
+            searchInput.addEventListener('input', filterBuilds);
+
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                filterBuilds();
+                searchInput.focus();
+            });
+        });
     </script>
 </body>
 </html>
