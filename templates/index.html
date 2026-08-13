@@ -67,14 +67,32 @@
             </button>
         </div>
 
-        <div class="p-3 border-b border-gray-200 bg-white shadow-sm z-10 flex-shrink-0">
-            <div class="relative">
+        <div class="p-3 border-b border-gray-200 bg-white dark:bg-gray-800 shadow-sm z-10 flex-shrink-0">
+            <div class="relative mb-2">
                 <input type="text" id="searchInput" placeholder="Search by tag or SHA..."
-                       class="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                       class="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <button id="clearSearch" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden focus:outline-none" aria-label="Clear search">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
+                </button>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+                <div class="flex items-center space-x-2">
+                    <label for="sortField" class="text-gray-600 dark:text-gray-400">Sort by:</label>
+                    <select id="sortField" class="border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="date">Date</option>
+                        <option value="tag">Tag</option>
+                    </select>
+                </div>
+                <button id="sortOrderToggle" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none flex items-center space-x-1 px-2 py-1 border border-transparent rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Toggle sort order">
+                    <span id="sortOrderIcon">
+                        <!-- Default icon: Descending -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                        </svg>
+                    </span>
+                    <span id="sortOrderText" class="text-xs font-medium">Desc</span>
                 </button>
             </div>
         </div>
@@ -85,9 +103,10 @@
             </div>
             {% if builds %}
                 {% for build in builds %}
-                <div id="sidebar-{{ build.id }}" class="sidebar-item cursor-pointer p-4 mb-2 rounded border-l-4 border-transparent hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150" onclick="showBuild('{{ build.id }}')">
+                <div id="sidebar-{{ build.id }}" class="sidebar-item cursor-pointer p-4 mb-2 rounded border-l-4 border-transparent hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150" onclick="showBuild('{{ build.id }}')" data-tag="{{ build.tag }}" data-date="{{ build.latest_date }}">
                     <div class="text-sm font-semibold text-gray-600">
-                        <span class="text-blue-600 dark:text-blue-400 break-words">{{ build.tag }}</span>
+                        <span class="text-blue-600 dark:text-blue-400 break-words block">{{ build.tag }}</span>
+                        <span class="text-xs text-gray-400 dark:text-gray-500 font-normal block mt-1">{{ build.latest_date or "Unknown Date" }}</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -210,8 +229,15 @@
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('searchInput');
             const clearBtn = document.getElementById('clearSearch');
-            const sidebarItems = document.querySelectorAll('.sidebar-item');
+            const sidebarItems = Array.from(document.querySelectorAll('.sidebar-item'));
             const noResultsMsg = document.getElementById('noResults');
+            const sidebarList = document.getElementById('sidebarList');
+            const sortFieldSelect = document.getElementById('sortField');
+            const sortOrderToggle = document.getElementById('sortOrderToggle');
+            const sortOrderIcon = document.getElementById('sortOrderIcon');
+            const sortOrderText = document.getElementById('sortOrderText');
+
+            let currentSortOrder = 'desc'; // default to desc
 
             if (!searchInput) return;
 
@@ -230,10 +256,10 @@
                     const tagsText = tagsElem ? tagsElem.textContent.toLowerCase() : '';
 
                     if (tagsText.includes(term)) {
-                        item.classList.remove('hidden');
+                        item.style.display = '';
                         hasVisible = true;
                     } else {
-                        item.classList.add('hidden');
+                        item.style.display = 'none';
                     }
                 });
 
@@ -248,6 +274,54 @@
                 }
             }
 
+            function sortSidebarItems() {
+                const sortField = sortFieldSelect.value;
+
+                sidebarItems.sort((a, b) => {
+                    let valA, valB;
+                    if (sortField === 'date') {
+                        valA = a.getAttribute('data-date') || '';
+                        valB = b.getAttribute('data-date') || '';
+                        // Basic string comparison for dates works if format is YYYY-MM-DD
+                    } else {
+                        valA = (a.getAttribute('data-tag') || '').toLowerCase();
+                        valB = (b.getAttribute('data-tag') || '').toLowerCase();
+                    }
+
+                    let cmp = 0;
+                    if (valA < valB) cmp = -1;
+                    else if (valA > valB) cmp = 1;
+
+                    return currentSortOrder === 'asc' ? cmp : -cmp;
+                });
+
+                // Re-append to sidebarList in sorted order
+                sidebarItems.forEach(item => {
+                    sidebarList.appendChild(item);
+                });
+            }
+
+            sortFieldSelect.addEventListener('change', () => {
+                sortSidebarItems();
+            });
+
+            sortOrderToggle.addEventListener('click', () => {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+                sortOrderText.textContent = currentSortOrder === 'asc' ? 'Asc' : 'Desc';
+
+                if (currentSortOrder === 'asc') {
+                    sortOrderIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 20h9m-9-4h6m4 0l4 4m0 0l4-4m-4 4V8" />
+                    </svg>`;
+                } else {
+                    sortOrderIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                    </svg>`;
+                }
+
+                sortSidebarItems();
+            });
+
             searchInput.addEventListener('input', filterBuilds);
 
             clearBtn.addEventListener('click', () => {
@@ -255,6 +329,9 @@
                 filterBuilds();
                 searchInput.focus();
             });
+
+            // Initial sort (default is date desc coming from backend, but this ensures DOM matches)
+            sortSidebarItems();
         });
 
         // Theme toggle logic
