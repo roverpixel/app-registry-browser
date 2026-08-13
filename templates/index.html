@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Docker Registry Browser</title>
+    <title>Registry App Browser</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -69,7 +69,7 @@
 
         <div class="p-3 border-b border-gray-200 bg-white dark:bg-gray-800 shadow-sm z-10 flex-shrink-0">
             <div class="relative mb-2">
-                <input type="text" id="searchInput" placeholder="Search by tag or SHA..."
+                <input type="text" id="searchInput" placeholder="Search by tag or Git SHA..."
                        class="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <button id="clearSearch" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden focus:outline-none" aria-label="Clear search">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -172,7 +172,7 @@
                                         {% endif %}
                                     </div>
                                     <div class="mt-2">
-                                        <span class="text-xs uppercase text-gray-500 block mb-1">SHAs</span>
+                                        <span class="text-xs uppercase text-gray-500 block mb-1">Git SHAs</span>
                                         {% if img.all_shas %}
                                             <div class="flex flex-wrap gap-1">
                                             {% for s in img.all_shas %}
