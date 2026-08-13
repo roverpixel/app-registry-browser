@@ -67,9 +67,13 @@ def get_registry_data():
             if not manifest or not digest:
                 continue
 
-            if digest not in repo_digest_tags[repo]:
-                # Fetch config blob for date and size
-                config_digest = manifest.get('config', {}).get('digest')
+            # Fetch config blob for date and size
+            config_digest = manifest.get('config', {}).get('digest')
+
+            # Use config_digest for grouping if available to correctly group tags sharing the same Image ID
+            group_key = config_digest if config_digest else digest
+
+            if group_key not in repo_digest_tags[repo]:
                 created_date = "Unknown"
                 size = 0
 
@@ -82,13 +86,20 @@ def get_registry_data():
                     if config_data:
                         created_date = config_data.get('created', "Unknown")
 
-                repo_digest_tags[repo][digest] = {
+                repo_digest_tags[repo][group_key] = {
                     'tags': [],
                     'created': created_date,
-                    'size': size
+                    'size': size,
+                    # We store the config_digest as the display digest instead of manifest digest,
+                    # as this matches `docker images` Image ID. Or we can store the first manifest digest seen.
+                    # Using group_key (usually config_digest) is often preferred as it matches Image ID, but we
+                    # drop the 'sha256:' prefix when displaying it later.
+                    'display_digest': group_key
                 }
 
-            repo_digest_tags[repo][digest]['tags'].append(tag)
+            # Avoid duplicate tags in case multiple manifests somehow resolve to same config and same tag?
+            # Generally tag is unique per repo loop, but safe to just append.
+            repo_digest_tags[repo][group_key]['tags'].append(tag)
 
     # Now group by individual tags.
     # For every unique tag across the registry, find all images (repo + digest) that have it.
@@ -96,7 +107,7 @@ def get_registry_data():
     builds_map = {} # tag_name -> { 'id': tag_name, 'tag': tag_name, 'images': [] }
 
     for repo, digests in repo_digest_tags.items():
-        for digest, data in digests.items():
+        for group_key, data in digests.items():
             tag_list = sorted(data['tags'])
 
             # Format size and date
@@ -108,11 +119,17 @@ def get_registry_data():
             shas = [t for t in tag_list if is_sha(t)]
             normal_tags = [t for t in tag_list if not is_sha(t)]
 
+            # The UI shows "digest", let's use the display_digest (which is now mostly config_digest)
+            # so it matches the Image ID that users see locally (e.g. 5caa9edcc796)
+            display_digest = data.get('display_digest', group_key)
+            if display_digest and display_digest.startswith('sha256:'):
+                display_digest = display_digest.split('sha256:')[1][:12]
+
             image_info = {
                 'repo': repo,
                 'size_mb': size_mb,
                 'created': date_str,
-                'digest': digest,
+                'digest': display_digest,
                 'all_tags': normal_tags,
                 'all_shas': shas
             }
