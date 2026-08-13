@@ -64,7 +64,7 @@ def get_registry_data():
     # A user clicks a tag (or SHA), and we show all repos that have that tag/sha.
     # But the user asked for a sidebar with:
     # Tags: v1, v2, v3
-    # SHA: 03de492
+    # Commit: 03de492
 
     # To do this, we need to correlate which tags and SHAs go together.
     # If the `api` image is tagged with `v1` and `03de492`, its manifest for `v1` will have the same digest as its manifest for `03de492`.
