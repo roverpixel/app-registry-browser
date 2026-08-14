@@ -44,12 +44,6 @@ def get_blob(repo, digest):
         print(f"Error fetching blob {digest} for {repo}: {e}")
         return None
 
-def is_sha(tag):
-    # A simple heuristic for git sha: hex string, typically 7, 8 or 40 chars
-    if len(tag) in (7, 8, 40) and all(c in '0123456789abcdefABCDEF' for c in tag):
-        return True
-    return False
-
 def get_registry_data():
     repos = get_repositories()
 
@@ -116,9 +110,6 @@ def get_registry_data():
             if 'T' in date_str:
                 date_str = date_str.split('T')[0] + " " + date_str.split('T')[1][:8]
 
-            shas = [t for t in tag_list if is_sha(t)]
-            normal_tags = [t for t in tag_list if not is_sha(t)]
-
             # The UI shows "digest", let's use the display_digest (which is now mostly config_digest)
             # so it matches the Image ID that users see locally (e.g. 5caa9edcc796)
             display_digest = data.get('display_digest', group_key)
@@ -130,8 +121,7 @@ def get_registry_data():
                 'size_mb': size_mb,
                 'created': date_str,
                 'digest': display_digest,
-                'all_tags': normal_tags,
-                'all_shas': shas
+                'all_tags': tag_list
             }
 
             for tag in tag_list:
