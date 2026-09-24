@@ -6,3 +6,4 @@ services:
     environment:
       - REGISTRY_URL=${REGISTRY_URL}
       - FLASK_ENV=development
+    restart: unless-stopped
